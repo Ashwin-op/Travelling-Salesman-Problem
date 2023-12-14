@@ -1,4 +1,7 @@
+import os
+
 import numpy as np
+import pandas as pd
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
 
@@ -64,6 +67,23 @@ def main(file_name):
     if solution:
         print_solution(manager, routing, solution)
 
+    return manager, routing, solution
+
 
 if __name__ == "__main__":
-    main("data.csv")
+    results = pd.DataFrame(columns=["file", "path", "cost"])
+    for file in os.listdir("competition"):
+        if file.endswith(".txt") and file.startswith("tsp-problem-"):
+            print(file)
+            manager, routing, solution = main("competition/" + file)
+            index = routing.Start(0)
+            path = []
+            while not routing.IsEnd(index):
+                path.append(manager.IndexToNode(index))
+                index = solution.Value(routing.NextVar(index))
+            path.append(manager.IndexToNode(index))
+            results = pd.concat([results, pd.DataFrame([[file, path, solution.ObjectiveValue() / ROUND]],
+                                                       columns=["file", "path", "cost"])])
+
+    results = results.sort_values(by=["file"])
+    results.to_csv("optimal_results.csv", index=False)
