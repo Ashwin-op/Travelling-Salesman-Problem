@@ -83,6 +83,7 @@ class BranchAndBound(TSP):
         upper_bound = sum([self.distance_matrix[i][(i + 1) % self.n] for i in range(self.n)])
 
         frontier = [Path(self.distance_matrix, self.n, [0], "MST")]
+        backtracks = 0  # Initialize backtracks counter
 
         start_time = time()
 
@@ -93,6 +94,7 @@ class BranchAndBound(TSP):
                 try:
                     expanded_config = config.expand(v)
                 except ValueError:
+                    backtracks += 1  # Increment backtracks count on dead-end
                     continue
 
                 if expanded_config.is_solution():
@@ -100,6 +102,8 @@ class BranchAndBound(TSP):
                     if this_solution < upper_bound:
                         tour = list(expanded_config.get_path())
                         upper_bound = this_solution
-                        self.update(tour + [0], this_solution, time() - start_time, {})
+                        self.update(tour + [0], this_solution, time() - start_time, {
+                            "backtracks": backtracks,
+                        })
                 elif expanded_config.get_lower_bound() < upper_bound:
                     heappush(frontier, expanded_config)
